@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * Palette is borrowed from a workshop: graphite panels, hazard amber for the
+ * things that need a human, and the signal colours a dispatcher already reads
+ * without thinking - green for done, blue for moving, red for stopped.
+ */
+@layer base {
+  :root {
+    --canvas: 245 246 248;
+    --surface: 255 255 255;
+    --raised: 249 250 252;
+    --line: 226 231 237;
+    --ink: 19 25 34;
+    --muted: 100 116 136;
+
+    --signal: 201 124 6;
+    --go: 21 138 79;
+    --route: 29 105 216;
+    --halt: 199 47 47;
+    --queue: 122 84 214;
+  }
+
+  .dark {
+    --canvas: 11 15 20;
+    --surface: 18 24 33;
+    --raised: 24 32 43;
+    --line: 35 45 59;
+    --ink: 230 237 245;
+    --muted: 143 160 179;
+
+    --signal: 245 165 36;
+    --go: 47 191 113;
+    --route: 76 154 255;
+    --halt: 255 92 92;
+    --queue: 167 139 250;
+  }
+
+  * {
+    @apply border-line;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-canvas text-ink antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'ss01';
+  }
+
+  /* Metrics line up in columns only when digits share a width. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    @apply bg-signal/25;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-signal/70 ring-offset-2 ring-offset-canvas;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-line;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted/50;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-card border border-line bg-surface shadow-card;
+  }
+
+  .panel-head {
+    @apply flex items-start justify-between gap-4 border-b border-line px-5 py-4;
+  }
+
+  .field {
+    @apply h-9 rounded-control border border-line bg-raised px-3 text-sm text-ink
+           placeholder:text-muted/70 focus:border-signal/60 focus:outline-none
+           focus:ring-2 focus:ring-signal/25;
+  }
+
+  .row-link {
+    @apply transition-colors hover:bg-raised/80;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

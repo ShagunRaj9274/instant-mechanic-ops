@@ -1,0 +1,14 @@
+# Drop this at /etc/caddy/Caddyfile on the EC2 box and replace the hostname.
+# Caddy obtains and renews the TLS certificate on its own, and proxies the
+# WebSocket upgrade without any extra configuration.
+
+instant-mechanic-api.duckdns.org {
+    reverse_proxy localhost:4000
+
+    encode gzip
+
+    log {
+        output file /var/log/caddy/api.log
+        format console
+    }
+}

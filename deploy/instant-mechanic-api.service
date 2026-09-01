@@ -1,0 +1,20 @@
+# sudo cp this to /etc/systemd/system/ then:
+#   sudo systemctl daemon-reload && sudo systemctl enable --now instant-mechanic-api
+
+[Unit]
+Description=Instant Mechanic API
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/instant-mechanic-ops/backend
+EnvironmentFile=/home/ubuntu/instant-mechanic-ops/backend/.env
+ExecStart=/usr/bin/node dist/index.js
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
