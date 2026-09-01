@@ -1,339 +1,803 @@
 # Instant Mechanic — Live Operations Console
 
-A production-shaped operations dashboard for a doorstep vehicle service company. It tracks
-bookings from the moment a customer confirms to the moment a mechanic closes the job, and it
-updates itself over WebSockets as jobs move.
+A production-shaped operations dashboard for a doorstep vehicle service company. It tracks bookings from the moment a customer confirms to the moment a mechanic closes the job, and updates itself in real time as jobs move through the dispatch workflow.
 
-**Live dashboard:** _add your Vercel URL_
-**Live API:** _add your backend URL_
-**API docs (Swagger):** _add your backend URL_`/api/docs`
+**Live dashboard:** https://instant-mechanic-ops.vercel.app
 
-Demo sign-in: `ops@instantmechanic.com` / `instant123`
+**Live API:** http://13.235.49.166:4000
 
----
+**API documentation (Swagger):** http://13.235.49.166:4000/api/docs
 
-## What this is
+**OpenAPI JSON:** http://13.235.49.166:4000/api/docs.json
 
-An operations lead opens one screen at the start of a shift and needs three answers: what is
-stuck, who is free, and how the day is tracking against the last one. The dashboard is built
-around those questions rather than around a list of CRUD screens.
+**API health:** http://13.235.49.166:4000/health
 
-- **Dispatch board first.** The overview opens with the five stages of a job — pending,
-  assigned, on the way, in progress, completed — with live counts. Each stage links straight
-  into the booking table, pre-filtered. Where work is piling up is the first thing you see.
-- **The numbers move on their own.** A booking that changes status anywhere reaches every open
-  console in under a second, through a WebSocket, with no page reload and no polling loop.
-- **The state machine is enforced server-side.** A booking cannot jump from pending to
-  completed, a job cannot be assigned without a mechanic, and every change writes an audit
-  event. The timeline on a booking can never disagree with its status.
+**GitHub repository:** https://github.com/ShagunRaj9274/instant-mechanic-ops
 
-### Features
-
-| Area | What it does |
-| --- | --- |
-| Overview | Dispatch board, 8 KPI tiles with period-over-period trends, bookings and revenue trends, top mechanics, live activity rail |
-| Analytics | Bookings and revenue over time, status split, service category mix, revenue by city, category economics table, 7/30/90-day ranges |
-| Bookings | Server-side search, multi-status filter, service and date filters, sortable columns, pagination, CSV export, detail page with full timeline and status actions |
-| Mechanics | Availability at a glance, jobs completed, revenue closed, rating, the job each one is on right now, detail page with recent jobs and turnaround time |
-| Customers | Lifetime spend, booking counts, vehicles, last booking, sortable and searchable |
-| Realtime | Socket.IO with JWT handshake auth, room-scoped booking subscriptions, notification rail, live connection indicator |
-| Auth | JWT sign-in, three roles (Admin, Operations, Viewer), viewers are blocked from mutations at the API, not just in the UI |
-| Polish | Dark and light themes, skeleton loaders, empty states, error states with retry, responsive to mobile, keyboard focus rings, reduced-motion support |
+**Demo sign-in:** `ops@instantmechanic.com` / `instant123`
 
 ---
 
-## Tech stack
+## What This Is
 
-**Frontend** — Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS, TanStack Query,
-Recharts, Socket.IO client, next-themes, lucide-react. Deployed on Vercel.
+An operations lead opens one screen at the start of a shift and needs three answers:
 
-**Backend** — Node.js 20, Express, TypeScript, Drizzle ORM, Socket.IO, Zod, JWT, Helmet,
-express-rate-limit, Swagger UI. Deployed on AWS EC2 free tier behind Caddy.
+1. What is stuck?
+2. Who is available?
+3. How is the day tracking?
 
-**Database** — PostgreSQL (Neon free tier, or RDS / self-hosted — any Postgres 13+).
+The dashboard is designed around these operational questions rather than a collection of basic CRUD screens.
 
-**Tooling** — Vitest, Docker, docker-compose, GitHub Actions.
+### Key Product Decisions
 
-### Why these choices
+* **Dispatch board first:** The overview opens with the five stages of a job — pending, assigned, on the way, in progress, and completed — with live counts.
+* **Live operational updates:** Booking and mechanic changes are delivered through Socket.IO without requiring a page reload.
+* **Server-side state machine:** Booking transitions are validated by the backend so invalid status jumps cannot be performed from the UI or API.
+* **Auditability:** Booking changes are recorded as booking events, providing a consistent timeline for each job.
+* **Role-based access:** Authentication and authorization are enforced at the API layer rather than relying only on frontend controls.
 
-- **Drizzle over Prisma.** No engine binary to download at build or boot, which keeps the
-  Docker image small and the EC2 deploy simple. It also lets analytics live in real SQL —
-  window functions, `FILTER` clauses, lateral joins — rather than in a query-builder dialect
-  that would need several round trips to say the same thing.
-- **Socket.IO over raw WebSockets or SSE.** Reconnection, heartbeats and room broadcasting are
-  handled, and the client falls back to long-polling if a corporate proxy blocks upgrades.
-- **TanStack Query as the cache.** Socket events invalidate query keys, so one event refreshes
-  whatever the operator happens to be looking at. There is no second source of truth in a
-  global store to keep in sync.
+---
+
+## Features
+
+| Area               | What it does                                                                                                                                  |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Overview**       | Dispatch board, KPI tiles, booking and revenue trends, top mechanics, and live activity                                                       |
+| **Analytics**      | Booking and revenue trends, status breakdown, service category mix, city breakdown, and time ranges                                           |
+| **Bookings**       | Search, filtering, sorting, pagination, CSV export, booking details, timeline, and status actions                                             |
+| **Mechanics**      | Availability, completed jobs, revenue, rating, current assignment, recent jobs, and turnaround information                                    |
+| **Customers**      | Customer search, booking history, lifetime spend, vehicles, and last booking                                                                  |
+| **Realtime**       | Socket.IO connection, live booking updates, mechanic updates, dashboard statistics, and booking subscriptions                                 |
+| **Authentication** | JWT authentication with Admin, Operations, and Viewer roles                                                                                   |
+| **UX**             | Responsive interface, loading states, empty states, error handling, retry actions, themes, keyboard accessibility, and reduced-motion support |
+
+---
+
+## Tech Stack
+
+### Frontend
+
+* Next.js 15
+* React 19
+* TypeScript
+* Tailwind CSS
+* TanStack Query
+* Recharts
+* Socket.IO Client
+* next-themes
+* lucide-react
+* Vercel
+
+### Backend
+
+* Node.js 20
+* Express
+* TypeScript
+* Drizzle ORM
+* PostgreSQL
+* Socket.IO
+* Zod
+* JWT
+* Helmet
+* express-rate-limit
+* Swagger UI
+* AWS EC2
+
+### Database
+
+* PostgreSQL
+* Neon PostgreSQL for the deployed environment
+
+### Tooling
+
+* Vitest
+* Docker
+* Docker Compose
+* GitHub Actions
+* Git/GitHub
+
+---
+
+## Why These Technologies?
+
+### Drizzle ORM
+
+Drizzle provides a lightweight typed database layer and keeps database queries close to SQL. This is useful for the analytics-heavy parts of the dashboard where filtering, aggregation, window functions, and reporting queries are important.
+
+### Socket.IO
+
+Socket.IO provides connection management, reconnection, heartbeats, and event broadcasting while keeping the realtime layer straightforward to integrate with the React frontend.
+
+### TanStack Query
+
+TanStack Query manages API data and caching. Socket events can invalidate relevant query keys so the dashboard refreshes the affected data without maintaining a second global source of truth.
+
+### PostgreSQL
+
+PostgreSQL provides relational integrity and is well suited to the booking, customer, mechanic, service, and audit-event relationships used by the application.
 
 ---
 
 ## Architecture
 
+```text
+                         Browser
+                            │
+             ┌──────────────┴──────────────┐
+             │                             │
+       REST API Calls                 Socket.IO
+             │                             │
+             │ JWT                         │ JWT
+             ▼                             ▼
+     ┌─────────────────────────────────────────┐
+     │             Node.js / Express           │
+     │                                         │
+     │  Routes → Validation → Services         │
+     │                    │                    │
+     │                    ▼                    │
+     │              Drizzle ORM                │
+     │                    │                    │
+     │              Live Simulator             │
+     └────────────────────┬────────────────────┘
+                          │
+                          ▼
+                  ┌─────────────────┐
+                  │ PostgreSQL /    │
+                  │ Neon Database   │
+                  └─────────────────┘
 ```
-                  Browser (Vercel)
-   ┌───────────────────────────────────────────┐
-   │  Next.js 15 App Router · React 19         │
-   │  TanStack Query cache   Socket.IO client  │
-   └──────────┬─────────────────────┬──────────┘
-              │ HTTPS REST          │ WSS
-              │ JWT bearer          │ JWT handshake
-   ┌──────────▼─────────────────────▼──────────┐
-   │  Caddy (TLS termination, reverse proxy)   │
-   └──────────────────┬────────────────────────┘
-                      │  AWS EC2 t2.micro
-   ┌──────────────────▼────────────────────────┐
-   │  Express API            Socket.IO server  │
-   │  ┌─────────────────────────────────────┐  │
-   │  │ routes → zod validation → service   │  │
-   │  │ auth · rate limit · error funnel    │  │
-   │  └─────────────────────────────────────┘  │
-   │  Live simulator (writes + broadcasts)     │
-   └──────────────────┬────────────────────────┘
-                      │ Drizzle ORM (pooled)
-   ┌──────────────────▼────────────────────────┐
-   │  PostgreSQL                               │
-   │  users · customers · vehicles · services  │
-   │  mechanics · bookings · booking_events    │
-   └───────────────────────────────────────────┘
-```
 
-**Request path.** A route parses query parameters with a Zod schema, hands typed input to a
-service function, and the service is the only layer that touches the database. Controllers never
-build SQL and services never touch `req` or `res`, so every service is callable from the
-simulator and from tests without an HTTP server.
+### Request Path
 
-**Error path.** Everything funnels through one error middleware. Zod failures become `400` with
-per-field detail, `ApiError` instances carry their own status and code, and anything unexpected
-becomes a `500` that logs the real message and returns a safe one. Clients only ever parse two
-shapes.
+A request enters through an API route, is validated with Zod, and is passed to the service layer.
 
-**Realtime path.** A status change — whether from an operator's click or from the simulator —
-runs inside a transaction that updates the booking, appends an audit event and syncs the
-mechanic's availability. Only after it commits does the server broadcast. Clients cannot
-receive an event describing a state the database never reached.
+The service layer is responsible for database operations and business logic. This keeps controllers thin and makes business logic reusable by the simulator and tests.
 
-### Data model
+### Error Path
 
-```
+Errors are handled through centralized error middleware.
+
+Validation errors return a structured `400` response, application errors return their appropriate HTTP status and error code, and unexpected errors are converted into safe `500` responses.
+
+### Realtime Path
+
+When a booking or mechanic changes:
+
+1. The request is validated.
+2. Business rules are checked.
+3. The database is updated.
+4. Booking events are recorded.
+5. Relevant realtime events are broadcast through Socket.IO.
+6. Connected dashboards refresh their affected data.
+
+---
+
+## Data Model
+
+```text
 customers ──< vehicles ──┐
     │                    │
     └──────────────< bookings >───── services
-                         │  │
-                mechanics ┘  └──< booking_events
+                         │
+                         │
+                     mechanics
+                         │
+                         └──< booking_events
 ```
 
-`booking_events` is append-only. It powers the timeline on a booking, the live activity rail,
-and any question about how long a job spent in a stage. Booking amounts are `numeric(10,2)`
-rather than floats, and indexes cover every column the dashboard filters or sorts on.
+### Main Entities
+
+* `users`
+* `customers`
+* `vehicles`
+* `services`
+* `mechanics`
+* `bookings`
+* `booking_events`
+
+`booking_events` provides the audit trail used for booking timelines and realtime activity.
 
 ---
 
-## Local setup
+# Local Setup
 
-Requires Node 20+ and a PostgreSQL 13+ database.
+## Requirements
+
+* Node.js 20+
+* npm
+* PostgreSQL 13+
+* Git
+
+### Clone the repository
 
 ```bash
-git clone https://github.com/<your-username>/instant-mechanic-ops.git
+git clone https://github.com/ShagunRaj9274/instant-mechanic-ops.git
 cd instant-mechanic-ops
 ```
 
-**1. Backend**
+---
+
+## Backend Setup
 
 ```bash
 cd backend
-cp .env.example .env          # set DATABASE_URL and JWT_SECRET
 npm install
-npm run db:push               # create tables from the Drizzle schema
-npm run db:seed               # 680 bookings, 72 customers, 26 mechanics
-npm run dev                   # http://localhost:4000
 ```
 
-**2. Frontend** (in a second terminal)
+Create the environment file:
+
+```bash
+cp .env.example .env
+```
+
+Configure your database and JWT secret.
+
+Then run:
+
+```bash
+npm run db:push
+npm run db:seed
+npm run dev
+```
+
+The backend will run at:
+
+```text
+http://localhost:4000
+```
+
+Swagger documentation:
+
+```text
+http://localhost:4000/api/docs
+```
+
+Health endpoint:
+
+```text
+http://localhost:4000/health
+```
+
+---
+
+## Frontend Setup
+
+Open another terminal:
 
 ```bash
 cd frontend
-cp .env.example .env.local    # NEXT_PUBLIC_API_URL=http://localhost:4000
 npm install
-npm run dev                   # http://localhost:3000
 ```
 
-Open http://localhost:3000 and sign in with `ops@instantmechanic.com` / `instant123`.
+Create:
 
-**Everything in Docker instead:**
+```text
+.env.local
+```
+
+Set:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:4000
+```
+
+Then run:
 
 ```bash
-docker compose up --build     # Postgres + API on :4000, seeded automatically
+npm run dev
 ```
 
-**Other commands**
+The frontend will normally be available at:
+
+```text
+http://localhost:3000
+```
+
+Sign in with:
+
+```text
+Email: ops@instantmechanic.com
+Password: instant123
+```
+
+---
+
+## Docker Setup
+
+The repository also includes Docker Compose configuration.
+
+From the repository root:
 
 ```bash
-npm test          # backend unit tests (state machine, auth hashing, pagination)
-npm run typecheck # strict TypeScript, both packages
-npm run db:reset  # wipe and regenerate the seed data
+docker compose up --build
+```
+
+This can be used to run the application stack with PostgreSQL and the backend in containers.
+
+---
+
+# Environment Variables
+
+## Backend
+
+Create:
+
+```text
+backend/.env
+```
+
+| Variable                | Required | Default                 | Description                     |
+| ----------------------- | -------- | ----------------------- | ------------------------------- |
+| `DATABASE_URL`          | Yes      | —                       | PostgreSQL connection string    |
+| `JWT_SECRET`            | Yes      | —                       | Secret used to sign JWT tokens  |
+| `PORT`                  | No       | `4000`                  | Backend server port             |
+| `NODE_ENV`              | No       | `development`           | Application environment         |
+| `CORS_ORIGINS`          | No       | `http://localhost:3000` | Allowed frontend origins        |
+| `JWT_EXPIRES_IN`        | No       | `12h`                   | JWT expiration duration         |
+| `SIMULATOR_ENABLED`     | No       | `true`                  | Enables/disables live simulator |
+| `SIMULATOR_INTERVAL_MS` | No       | `6000`                  | Simulator update interval       |
+| `RATE_LIMIT_WINDOW_MS`  | No       | `60000`                 | Rate-limit window               |
+| `RATE_LIMIT_MAX`        | No       | `300`                   | Maximum requests per window     |
+
+For Neon PostgreSQL, use the connection string supplied by Neon.
+
+**Do not commit `.env` files or database credentials to GitHub.**
+
+---
+
+## Frontend
+
+Create:
+
+```text
+frontend/.env.local
+```
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:4000
+```
+
+For production, this should point to the deployed API origin.
+
+---
+
+# API Documentation
+
+The deployed API provides interactive Swagger documentation.
+
+### Swagger UI
+
+http://13.235.49.166:4000/api/docs
+
+### OpenAPI JSON
+
+http://13.235.49.166:4000/api/docs.json
+
+### Health Check
+
+http://13.235.49.166:4000/health
+
+---
+
+## API Base URL
+
+```text
+http://13.235.49.166:4000/api/v1
 ```
 
 ---
 
-## Environment variables
+## Authentication
 
-**backend/.env**
+### Login
 
-| Variable | Required | Default | Notes |
-| --- | --- | --- | --- |
-| `DATABASE_URL` | yes | — | Postgres connection string. Append `?sslmode=require` for Neon or RDS |
-| `JWT_SECRET` | yes | — | Long random string. `openssl rand -base64 32` |
-| `PORT` | no | `4000` | |
-| `NODE_ENV` | no | `development` | |
-| `CORS_ORIGINS` | no | `http://localhost:3000` | Comma separated. Must include your Vercel URL in production |
-| `JWT_EXPIRES_IN` | no | `12h` | |
-| `SIMULATOR_ENABLED` | no | `true` | Set `false` to run the API as a read-only service |
-| `SIMULATOR_INTERVAL_MS` | no | `6000` | How often a job moves |
-| `RATE_LIMIT_WINDOW_MS` | no | `60000` | |
-| `RATE_LIMIT_MAX` | no | `300` | Requests per window per IP |
+```http
+POST /api/v1/auth/login
+```
 
-The API validates its environment with Zod at boot and exits with a readable message if
-something is missing, rather than failing later inside a query.
+Example:
 
-**frontend/.env.local**
+```json
+{
+  "email": "ops@instantmechanic.com",
+  "password": "instant123"
+}
+```
 
-| Variable | Required | Notes |
-| --- | --- | --- |
-| `NEXT_PUBLIC_API_URL` | yes | Base URL of the API, no trailing slash. Used for both REST and the socket |
+The endpoint returns a JWT that is used for authenticated API requests.
+
+### Current User
+
+```http
+GET /api/v1/auth/me
+```
 
 ---
 
-## API documentation
+# Dashboard APIs
 
-Interactive Swagger UI is served by the API itself at **`/api/docs`**, and the raw OpenAPI 3
-document at **`/api/docs.json`**.
+```http
+GET /api/v1/dashboard
+GET /api/v1/dashboard/summary
+GET /api/v1/dashboard/timeseries
+GET /api/v1/dashboard/breakdown
+GET /api/v1/dashboard/activity
+```
 
-Every success returns `{ "success": true, "data": ... }`, list endpoints add a `meta` object,
-and every failure returns `{ "success": false, "error": { code, message, details } }`.
+These endpoints provide the KPI, trend, breakdown, and live activity data used by the operations dashboard.
 
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| `POST` | `/api/v1/auth/login` | Exchange email and password for a JWT |
-| `GET` | `/api/v1/auth/me` | Profile for the current token |
-| `GET` | `/api/v1/dashboard` | Everything the overview needs in one call |
-| `GET` | `/api/v1/dashboard/summary` | KPI tiles with trend deltas |
-| `GET` | `/api/v1/dashboard/timeseries` | Bookings and revenue per day, gaps filled |
-| `GET` | `/api/v1/dashboard/breakdown` | Split by status, service category and city |
-| `GET` | `/api/v1/dashboard/activity` | Most recent status changes |
-| `GET` | `/api/v1/bookings` | Search, filter, sort, paginate |
-| `GET` | `/api/v1/bookings/export` | Same filters, returned as CSV |
-| `GET` | `/api/v1/bookings/:id` | One booking with its full timeline |
-| `PATCH` | `/api/v1/bookings/:id/status` | Move a booking along the dispatch flow |
-| `GET` | `/api/v1/mechanics` | Field team, each with their current job |
-| `GET` | `/api/v1/mechanics/:id` | One mechanic with stats and recent jobs |
-| `PATCH` | `/api/v1/mechanics/:id/status` | Put a mechanic on or off shift |
-| `GET` | `/api/v1/customers` | Customer book with lifetime spend |
-| `GET` | `/api/v1/customers/:id` | One customer with vehicles |
-| `GET` | `/api/v1/services` | Service catalogue |
-| `GET` | `/health` | Liveness, database reachability, connected socket count |
+---
 
-**Booking list parameters:** `page`, `limit`, `search`, `status` (comma separated),
-`serviceId`, `mechanicId`, `customerId`, `city`, `dateFrom`, `dateTo`, `minAmount`,
-`maxAmount`, `sortBy`, `sortOrder`.
+# Booking APIs
+
+```http
+GET /api/v1/bookings
+GET /api/v1/bookings/export
+GET /api/v1/bookings/:id
+PATCH /api/v1/bookings/:id/status
+```
+
+### Booking List Filters
+
+Supported filters include:
+
+```text
+page
+limit
+search
+status
+serviceId
+mechanicId
+customerId
+city
+dateFrom
+dateTo
+minAmount
+maxAmount
+sortBy
+sortOrder
+```
+
+Example:
 
 ```bash
-curl "$API/api/v1/bookings?status=PENDING,ASSIGNED&sortBy=amount&sortOrder=desc&limit=10" \
-  -H "Authorization: Bearer $TOKEN"
+curl "http://13.235.49.166:4000/api/v1/bookings?status=PENDING,ASSIGNED&sortBy=amount&sortOrder=desc&limit=10" \
+  -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
-**Socket events** — connect to the API origin, pass the JWT as `auth.token`:
+---
 
-| Event | Payload |
-| --- | --- |
-| `booking:created` | `{ booking, at }` |
-| `booking:updated` | `{ booking, at, actor }` |
-| `mechanic:updated` | `{ mechanic, at }` |
-| `dashboard:stats` | `{ summary, at }` |
+# Mechanic APIs
 
-Clients can emit `booking:subscribe` with a booking id to join that booking's room and receive
-only its updates.
+```http
+GET /api/v1/mechanics
+GET /api/v1/mechanics/:id
+PATCH /api/v1/mechanics/:id/status
+```
+
+These endpoints provide mechanic availability, assignments, statistics, and status management.
 
 ---
 
-## The live simulator
+# Customer APIs
 
-Nothing else writes to the database on its own, so the API ships with a simulator that plays
-the part of the mechanic and customer mobile apps: it advances jobs through the flow, books new
-ones, occasionally cancels one, takes mechanics off shift, and broadcasts each change. It writes
-real rows through the same service functions and the same state machine as the API — it is not a
-fake event emitter.
-
-Set `SIMULATOR_ENABLED=false` to turn it off; the dashboard then updates only in response to
-operator actions, which still travel over the socket to every other open console.
+```http
+GET /api/v1/customers
+GET /api/v1/customers/:id
+```
 
 ---
 
-## Deployment
+# Service APIs
 
-Deployment is covered step by step in **[DEPLOYMENT.md](./DEPLOYMENT.md)**, including the piece
-that catches most people out: a Vercel frontend is served over HTTPS and browsers will block it
-from calling a plain-HTTP EC2 box, so the API needs TLS. The guide sets that up with a free
-DuckDNS subdomain and Caddy, which obtains and renews a certificate automatically.
-
-In short: Postgres on Neon, the API on an EC2 `t2.micro` behind Caddy managed by systemd, and
-the frontend on Vercel with `NEXT_PUBLIC_API_URL` pointing at the API's HTTPS domain. A GitHub
-Actions workflow typechecks, tests and builds both packages on every push.
+```http
+GET /api/v1/services
+```
 
 ---
 
-## Testing and CI
+# Health API
+
+```http
+GET /health
+```
+
+The deployed endpoint is:
+
+http://13.235.49.166:4000/health
+
+Example response:
+
+```json
+{
+  "status": "ok",
+  "database": "connected",
+  "realtimeClients": 0
+}
+```
+
+---
+
+# Booking State Machine
+
+Bookings follow a controlled dispatch workflow:
+
+```text
+PENDING
+   ↓
+ASSIGNED
+   ↓
+ON_THE_WAY
+   ↓
+IN_PROGRESS
+   ↓
+COMPLETED
+```
+
+A booking may also be cancelled where permitted.
+
+Invalid transitions are rejected by the backend instead of relying on frontend validation.
+
+This prevents clients from bypassing the dispatch workflow by directly calling the API.
+
+---
+
+# Realtime Updates
+
+Realtime communication uses Socket.IO.
+
+The deployed Socket.IO endpoint is available from the API origin:
+
+```text
+http://13.235.49.166:4000
+```
+
+JWT authentication is supplied during the Socket.IO handshake.
+
+### Realtime Events
+
+| Event              | Description                  |
+| ------------------ | ---------------------------- |
+| `booking:created`  | A new booking was created    |
+| `booking:updated`  | A booking changed            |
+| `mechanic:updated` | A mechanic changed           |
+| `dashboard:stats`  | Dashboard statistics changed |
+
+Clients can subscribe to a particular booking to receive updates relevant to that booking.
+
+---
+
+# Live Simulator
+
+The backend includes a live simulator that represents activity coming from customer and mechanic applications.
+
+It can:
+
+* Advance bookings through dispatch states
+* Create new bookings
+* Cancel bookings
+* Change mechanic availability
+* Broadcast realtime updates
+* Exercise the same business logic used by API requests
+
+The simulator can be disabled using:
+
+```env
+SIMULATOR_ENABLED=false
+```
+
+This allows the API to operate without simulated activity.
+
+---
+
+# Deployment
+
+## Current Deployment
+
+### Frontend
+
+The frontend is intended to be deployed on Vercel.
+
+```text
+Vercel
+   ↓
+Next.js Frontend
+```
+
+**Live dashboard:**
+
+```text
+YOUR_VERCEL_URL
+```
+
+Replace this with the actual Vercel deployment URL.
+
+### Backend
+
+The backend is deployed on AWS EC2.
+
+```text
+AWS EC2
+   ↓
+Node.js / Express
+   ↓
+PostgreSQL / Neon
+```
+
+### Backend URL
+
+http://13.235.49.166:4000
+
+### Swagger
+
+http://13.235.49.166:4000/api/docs
+
+### OpenAPI
+
+http://13.235.49.166:4000/api/docs.json
+
+### Health
+
+http://13.235.49.166:4000/health
+
+### Database
+
+The deployed backend connects to PostgreSQL hosted on Neon.
+
+---
+
+# Repository Structure
+
+```text
+instant-mechanic-ops/
+│
+├── backend/
+│   ├── src/
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── ...
+│
+├── frontend/
+│   ├── app/
+│   ├── components/
+│   ├── package.json
+│   └── ...
+│
+├── deploy/
+│
+├── .github/
+│   └── workflows/
+│
+├── docker-compose.yml
+├── DEPLOYMENT.md
+├── SUBMISSION.md
+└── README.md
+```
+
+---
+
+# Testing
+
+Backend tests can be run with:
 
 ```bash
-cd backend && npm test
+cd backend
+npm test
 ```
 
-Unit tests cover the dispatch state machine (the happy path, rejected jumps, terminal states),
-password hashing and verification, and pagination boundaries. They are deliberately free of
-database dependencies so CI runs them without a service container.
+The test suite covers important backend behavior including:
 
-`.github/workflows/ci.yml` runs typecheck, tests and a production build of both packages on
-every push and pull request.
+* Booking state transitions
+* Rejected/invalid transitions
+* Authentication behavior
+* Password hashing and verification
+* Pagination behavior
 
----
+Type checking can be run with:
 
-## AI usage
-
-I used **Claude** as an engineering assistant throughout, and treated its output as a first
-draft to review rather than as finished code.
-
-**Where it helped most**
-
-- Scaffolding repetitive, well-understood layers: the Express route files, the Zod query
-  schemas, the OpenAPI document, and the React table and card components.
-- Writing the seed generator, including the realistic Indian names, vehicle models and service
-  catalogue.
-- Drafting the SQL for the analytics endpoints, particularly the `generate_series` join that
-  fills empty days in the timeseries and the lateral join that attaches each mechanic's current
-  job.
-- Sanity-checking the CORS, Helmet and rate-limit configuration.
-
-**What I changed or decided myself**
-
-- The product shape. The dispatch board as the opening element, the choice of KPIs, and the
-  decision to link every pipeline stage into a pre-filtered table were mine; the first drafts
-  produced a conventional grid of four cards.
-- The state machine. I moved transition rules into a single table that both the API and the
-  simulator import, so the rules cannot drift apart, and wrapped each transition in a
-  transaction covering the booking row, the audit event and the mechanic's availability.
-- Query correctness. Early generated versions of the mechanics list used string interpolation
-  for filters and a separate `COUNT` query; I rewrote them as fully parameterised SQL with a
-  `count(*) OVER()` window so filters and totals cannot disagree.
-- Realtime behaviour. I added the debounce that batches cache invalidations, so a busy hour
-  cannot turn into a refetch per event.
-- Verification. I ran the whole stack locally against PostgreSQL and checked each endpoint,
-  every error path, the role restrictions, the illegal-transition rejections and the socket
-  broadcast before considering any of it done.
+```bash
+npm run typecheck
+```
 
 ---
 
-## What I would build next
+# CI
 
-Mechanic locations on a live map (the coordinates are already in the schema and returned by the
-API), Redis caching for the dashboard aggregates so the KPI query does not run per client, a
-proper migration history instead of `db:push`, and Playwright coverage of the dispatch flow.
+GitHub Actions is included in the repository for automated validation.
+
+The CI workflow is responsible for checking the project during development and helps catch:
+
+* TypeScript errors
+* Test failures
+* Production build issues
+
+---
+
+# Security and Reliability
+
+The backend includes several protections:
+
+* JWT authentication
+* Role-based authorization
+* Zod input validation
+* Helmet security headers
+* Rate limiting
+* Centralized error handling
+* Server-side booking state validation
+* Parameterized database operations
+* Environment-based secret configuration
+
+Sensitive credentials are stored through environment variables rather than source code.
+
+---
+
+# AI Usage
+
+AI tools were used as engineering assistants during development, primarily **ChatGPT and Claude**.
+
+They were used for:
+
+* Debugging implementation issues
+* Reviewing architecture decisions
+* Generating and refining boilerplate
+* API documentation assistance
+* SQL/query suggestions
+* Backend and frontend troubleshooting
+* Deployment troubleshooting
+* Reviewing security configuration
+* Improving project documentation
+
+AI-generated suggestions were treated as drafts rather than automatically accepted code. The implementation was reviewed, modified, tested, and integrated manually.
+
+### Human Decisions and Implementation
+
+The core product decisions were made around the operational workflow of the application, including:
+
+* Making the dispatch board the primary dashboard element
+* Designing the booking state machine
+* Connecting booking status changes to mechanic availability
+* Providing booking timelines and audit events
+* Implementing realtime dashboard updates
+* Designing search, filtering, pagination, and analytics behavior
+* Testing API behavior and invalid state transitions
+* Deploying and troubleshooting the backend on AWS EC2
+
+---
+
+# Future Improvements
+
+Potential next improvements include:
+
+* Live mechanic location tracking
+* Map-based dispatch visualization
+* Redis caching for dashboard aggregates
+* More extensive automated end-to-end testing
+* Playwright coverage for critical dispatch workflows
+* Database migration history
+* Advanced operational alerts
+* Push notifications for critical booking events
+* More granular role and permission management
+
+---
+
+# Links
+
+| Resource           | URL                                                   |
+| ------------------ | ----------------------------------------------------- |
+| **GitHub**         | https://github.com/ShagunRaj9274/instant-mechanic-ops |
+| **Live Dashboard** | `YOUR_VERCEL_URL`                                     |
+| **Live API**       | http://13.235.49.166:4000                             |
+| **Swagger UI**     | http://13.235.49.166:4000/api/docs                    |
+| **OpenAPI JSON**   | http://13.235.49.166:4000/api/docs.json               |
+| **Health Check**   | http://13.235.49.166:4000/health                      |
+
+---
+
+# Demo Credentials
+
+```text
+Email: ops@instantmechanic.com
+Password: instant123
+```
+
+> These credentials are intended for evaluation/demo purposes only.
